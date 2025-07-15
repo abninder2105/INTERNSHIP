@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Chat{% endblock %}
+{% block content %}
+<div class="sidebar">
+    <h2>{{ user.role }}</h2>
+    <p>{{ user.username }}</p>
+    <a href="{{ url_for('auth.logout') }}">Logout</a>
+
+    <!-- 👇 User list for private messaging -->
+    <h3>Users</h3>
+    <ul id="users-list">
+        <!-- Filled by JavaScript -->
+    </ul>
+</div>
+
+<div class="main">
+    <div class="channel-header" id="channel-header"># General Chat</div>
+    <div class="messages" id="chat-box"></div>
+
+    <form id="chat-form">
+        <input type="text" id="chat-input" placeholder="Type your message here..." autocomplete="off" required>
+        <button type="submit">Send</button>
+    </form>
+</div>
+
+<!-- Socket.IO client and chat script -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script type="text/javascript">
+    const socket = io();
+    let selectedUser = 'Everyone'; // default
+
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('chat-input');
+    const chatBox = document.getElementById('chat-box');
+    const channelHeader = document.getElementById('channel-header');
+
+    // Fetch user list and display
+    fetch('/chat/users')
+        .then(res => res.json())
+        .then(users => {
+            const ul = document.getElementById('users-list');
+
+            // Add "Everyone" option first
+            const everyone = document.createElement('li');
+            everyone.textContent = 'Everyone';
+            everyone.style.cursor = 'pointer';
+            everyone.style.fontWeight = 'bold';
+            everyone.onclick = () => {
+                selectedUser = 'Everyone';
+                input.placeholder = 'Type your message here...';
+                channelHeader.textContent = '# General Chat';
+            };
+            ul.appendChild(everyone);
+
+            // Add all other users
+            users.forEach(username => {
+                const li = document.createElement('li');
+                li.textContent = username;
+                li.style.cursor = 'pointer';
+                li.onclick = () => {
+                    selectedUser = username;
+                    input.placeholder = `Message to ${username}`;
+                    channelHeader.textContent = `Chat with ${username}`;
+                };
+                ul.appendChild(li);
+            });
+        });
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = input.value.trim();
+        if (!message) return;
+
+        socket.emit('send_message', {
+            message: message,
+            to: selectedUser
+        });
+        input.value = '';
+    });
+
+    socket.on('receive_message', function(data) {
+        const msg = document.createElement('div');
+        msg.innerHTML = `<strong>${data.username}</strong> <em>to ${data.to}</em>: ${data.message}`;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest
+    });
+</script>
+{% endblock %}

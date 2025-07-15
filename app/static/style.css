@@ -1,0 +1,6 @@
+body { margin: 0; font-family: Arial; display: flex; height: 100vh; }
+.sidebar { width: 250px; background-color: #611f69; color: white; padding: 20px; }
+.main { flex: 1; padding: 20px; background-color: #f4f4f4; display: flex; flex-direction: column; }
+.channel-header { font-size: 20px; margin-bottom: 10px; }
+.messages { flex: 1; overflow-y: auto; background: white; padding: 10px; margin-bottom: 10px; }
+#messageForm { display: flex; }
